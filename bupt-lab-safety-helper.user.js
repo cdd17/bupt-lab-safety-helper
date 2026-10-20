@@ -206,7 +206,8 @@
     const img = [...table.querySelectorAll('img')].find(e => /theme_picture/i.test(e.getAttribute('src') || ''));
     const options = inputs.map(e => ({value:e.value, text:(e.closest('tr')?.innerText || e.parentElement.textContent).trim()}));
     const row = img?.closest('tr');
-    const textStem = row ? row.innerText.replace(/^\s*\d+\s*[.．]/, '').replace(/\(分数[：:].*?\)/g, '').trim() : '';
+    const textStem = row ? row.innerText.replace(/^\s*\d+\s*[.．]/, '')
+      .replace(/[（(]\s*分数[：:].*?[）)]/g, '').trim() : '';
     const page = { image:img?.getAttribute('src') || '', stem:textStem, options,
       multiple:inputs.every(e => e.type === 'checkbox') };
     return {page,inputs,img,fingerprint:JSON.stringify([page.image,page.stem,page.options])};
@@ -223,7 +224,7 @@
         logger: msg => { if (msg.status === 'recognizing text') say(`本机 OCR：${Math.round(msg.progress * 100)}%`); }
       });
       if (stopped) return null;
-      const response = await worker.recognize(current.img);
+      const response = await worker.recognize(current.img.src.split('#')[0]);
       current.page.stem = response.data.text.trim();
       $('stem').value = current.page.stem;
       result = M.matchQuestion(bank, current.page, readStore().aliases);
