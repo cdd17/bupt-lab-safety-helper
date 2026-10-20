@@ -1,0 +1,8 @@
+{
+  "name": "bupt-lab-safety-helper",
+  "version": "0.1.0",
+  "private": true,
+  "description": "本地题库匹配与实验室安全考试页面填写助手",
+  "license": "MIT",
+  "scripts": { "build": "node build.cjs", "test": "node --test test/*.test.cjs" }
+}
