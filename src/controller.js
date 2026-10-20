@@ -28,11 +28,16 @@
     background:#f3f6fa;padding:8px;font:12px/1.5 system-ui}small{display:block;color:#526475}
     summary{cursor:pointer}input[type=file]{max-width:100%}
     </style><section><h3>实验室安全答题助手</h3>
-    <small id="count"></small><input id="import" type="file" accept=".json,application/json" multiple>
+    <small id="count"></small>
+    <div><button id="start">一键开始</button><button id="stop">停止</button></div>
+    <small>首次自动下载公开题库；匹配不确定时暂停，完成后请检查并交卷。</small>
+    <details><summary>手动操作与题库</summary>
+    <button id="download">下载 / 更新题库</button>
+    <input id="import" type="file" accept=".json,application/json" multiple>
     <div><button id="match">识别当前题</button><button id="fill" disabled>填写当前题</button>
-    <button id="start">连续填写</button><button id="stop">停止</button></div>
+    </div></details>
     <textarea id="stem" placeholder="OCR 不准时，在这里输入完整题干后重新识别"></textarea>
-    <pre id="status">导入题库后开始。连续填写遇到不确定匹配会暂停，交卷请自行点击。</pre>
+    <pre id="status">点“一键开始”即可下载题库并填写。首次需要公网；下载失败可展开“手动操作与题库”导入 JSON。</pre>
     <details><summary>本机数据</summary><button id="export">导出操作记录</button>
     <button id="clear">清除题库、映射和记录</button></details></section>`;
   const $ = id => shadow.getElementById(id);
@@ -40,6 +45,27 @@
   const count = () => { $('count').textContent = `本机题库：${bank.length} 条；识别在本机完成`; };
   count();
   let busy = false, active = null, worker = null, stopped = false;
+  function requestBank(url) {
+    return new Promise((resolve, reject) => GM_xmlhttpRequest({
+      method:'GET', url, anonymous:true, timeout:30000,
+      onload: response => {
+        if (response.status !== 200) { reject(new Error(`题库下载失败：HTTP ${response.status}`)); return; }
+        try { resolve(JSON.parse(response.responseText)); }
+        catch { reject(new Error('题库源返回的不是有效 JSON')); }
+      },
+      onerror: () => reject(new Error('无法下载 GitHub 题库，请检查公网连接或手动导入')),
+      ontimeout: () => reject(new Error('题库下载超时，可重试或手动导入'))
+    }));
+  }
+  async function downloadBank() {
+    update({running:false});
+    const downloaded = await window.BuptSafetyLoader.loadBank(requestBank, M.validateBank,
+      (done,total) => say(`正在下载公开题库：${done} / ${total}。可点击“停止”取消。`), () => stopped);
+    if (stopped) return;
+    bank = downloaded; active = null; $('fill').disabled = true;
+    // 全部文件成功后才替换缓存，下载失败保留之前的题库。
+    update({bank,aliases:{},last:''}); count(); say(`题库已就绪：${bank.length} 条。`);
+  }
   function readPage() {
     const inputs = answerInputs();
     const table = inputs[0]?.closest('table');
@@ -133,7 +159,12 @@
   });
   $('match').onclick = () => guard(recognize);
   $('fill').onclick = () => guard(() => fillCurrent(true));
-  $('start').onclick = () => guard(async () => { update({running:true,last:''}); await step(); });
+  $('download').onclick = () => guard(downloadBank);
+  $('start').onclick = () => guard(async () => {
+    if (!bank.length) await downloadBank();
+    if (stopped) return;
+    update({running:true,last:''}); await step();
+  });
   $('stop').onclick = () => { stopped=true; update({running:false}); say('已停止。'); };
   $('clear').onclick = () => {
     stopped=true; bank=[]; active=null; $('fill').disabled=true;
