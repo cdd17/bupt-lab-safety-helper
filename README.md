@@ -2,6 +2,8 @@
 
 **BUPT Lab Safety Helper · 北京邮电大学实验室安全教育与考试系统辅助工具**
 
+![北邮实验室安全准入考试助手：实验室安全与本机识别插画](https://github.com/user-attachments/assets/a1d50494-2c27-475a-b867-44f3f21331ec)
+
 ![Version](https://img.shields.io/badge/version-0.2.0-2563eb)
 ![License](https://img.shields.io/badge/license-MIT-16a34a)
 ![Browser](https://img.shields.io/badge/browser-Edge%20%7C%20Chrome-0f766e)
